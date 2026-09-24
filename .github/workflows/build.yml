@@ -1,9 +1,9 @@
 name: Build APK
 
-于:
+on:
   push:
-    分支: [ main, master ]
-  workflow_dispatch:          # 允许手动点按钮运行
+    branches: [ main, master ]
+  workflow_dispatch:
 
 permissions:
   contents: write

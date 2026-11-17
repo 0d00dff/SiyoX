@@ -8,6 +8,8 @@ on:
   workflow_dispatch:   # 允许手动触发
 
 env:
+  ANDROID_HOME: /usr/local/lib/android/sdk
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
   KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
   KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
   KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -28,10 +30,16 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: 安装 Android SDK / NDK / CMake
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'platforms;android-33 build-tools;34.0.0 ndk;27.1.12297006 cmake;3.28.0'
+      - name: 补齐 Android SDK 组件（缺失才安装，不会中断构建）
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ -x "$SDKMANAGER" ]; then
+            yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+            "$SDKMANAGER" "platforms;android-33" "build-tools;34.0.0" "ndk;27.1.12297006" || true
+            "$SDKMANAGER" "cmake;3.28.0" || echo "cmake;3.28.0 未找到，继续使用 Runner 预装版本"
+          else
+            echo "未找到 sdkmanager，使用 GitHub Runner 预装 SDK"
+          fi
 
       - name: 配置 Gradle
         uses: gradle/actions/setup-gradle@v3

@@ -1,4 +1,4 @@
-name: Build Signed Release APK
+name: Build Debug APK
 
 on:
   push:
@@ -10,14 +10,10 @@ on:
 env:
   ANDROID_HOME: /usr/local/lib/android/sdk
   ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-  KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-  KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-  KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-  KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
 jobs:
   build:
-    name: 构建并签名 Release APK
+    name: 构建 Debug APK
     runs-on: ubuntu-latest
 
     steps:
@@ -45,24 +41,11 @@ jobs:
       - name: 给 gradlew 添加执行权限
         run: chmod +x gradlew
 
-      - name: 还原签名文件
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/release.keystore"
-          if [ ! -s "$GITHUB_WORKSPACE/release.keystore" ]; then
-            echo "::error::release.keystore 为空，请检查 KEYSTORE_BASE64 Secret 是否正确"
-            exit 1
-          fi
+      - name: 构建 Debug APK
+        run: ./gradlew assembleDebug
 
-      - name: 构建并签名 Release APK
-        run: |
-          ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/release.keystore" \
-            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
-            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
-
-      - name: 上传签名后的 APK
+      - name: 上传 APK 产物
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-signed
-          path: app/build/outputs/apk/release/*.apk
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
